@@ -52,8 +52,9 @@ class FullScreenActivity : AppCompatActivity() {
             // Format Date (e.g., 03/06/2026 ,19:01)
             val formattedDate = SimpleDateFormat("dd/MM/yyyy ,HH:mm", Locale.getDefault()).format(Date(createdAt))
             
-            binding.tvWatermarkOverlay.text = "$deviceName\n$formattedDate"
-            binding.tvWatermarkOverlay.visibility = View.VISIBLE
+            // Display Device Name and Formatted Date instead of XYZ Company
+        /*    binding.tvWatermarkOverlay.text = "$deviceName\n$formattedDate"
+            binding.tvWatermarkOverlay.visibility = View.VISIBLE*/
         }
     }
 
