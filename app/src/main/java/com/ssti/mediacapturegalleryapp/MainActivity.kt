@@ -7,6 +7,7 @@ import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
@@ -81,7 +82,7 @@ class MainActivity : AppCompatActivity() {
         
         setSupportActionBar(binding.toolbar)
         
-        // Use color from resources directly since getColor() with resolveTypedValueOrThrow is failing
+        // Status Bar Color logic
         val primaryColor = ContextCompat.getColor(this, R.color.primary)
         changeStatusBarColor(primaryColor)
 
@@ -95,7 +96,6 @@ class MainActivity : AppCompatActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
         window.statusBarColor = color
         
-        // Automatically adjust icon colors (Light/Dark) based on the background brightness
         val isLightBackground = ColorUtils.calculateLuminance(color) > 0.5
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLightBackground
     }
@@ -107,9 +107,15 @@ class MainActivity : AppCompatActivity() {
         val actionView = menuItem.actionView
         val themeSwitch = actionView?.findViewById<SwitchCompat>(R.id.themeSwitch)
         
-        val isDarkMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        themeSwitch?.isChecked = isDarkMode
+        // PHONE SETTINGS के हिसाब से switch को sync करना
+        val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        val isDarkModeActive = currentNightMode == Configuration.UI_MODE_NIGHT_YES
         
+        // Listener हटाकर state set करें ताकि loop न बने
+        themeSwitch?.setOnCheckedChangeListener(null)
+        themeSwitch?.isChecked = isDarkModeActive
+        
+        // दोबारा Listener जोड़ें manual click के लिए
         themeSwitch?.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)

@@ -111,7 +111,7 @@ object WatermarkUtil {
         // Draw Logo (Requirement: Small logo of XYZ Company)
         val logoSize = (rectHeight * 0.5f).toInt()
         val logoDrawable = ContextCompat.getDrawable(context, R.drawable.ic_company_logo)
-        logoDrawable?.let {
+    /*    logoDrawable?.let {
             val logoLeft = 30
             val logoTop = (workingBitmap.height - rectHeight / 2 - logoSize / 2).toInt()
             it.setBounds(logoLeft, logoTop, logoLeft + logoSize, logoTop + logoSize)
@@ -120,7 +120,7 @@ object WatermarkUtil {
             val textLeft = (logoLeft + logoSize + 30).toFloat()
             canvas.drawText(mainText, textLeft, workingBitmap.height - rectHeight + padding + boundsMain.height(), paintMain)
             canvas.drawText(subText, textLeft, workingBitmap.height - padding, paintSub)
-        }
+        }*/
 
         FileOutputStream(outputFile).use { out ->
             workingBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
