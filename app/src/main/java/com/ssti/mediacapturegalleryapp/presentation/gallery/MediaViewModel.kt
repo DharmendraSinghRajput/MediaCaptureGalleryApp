@@ -4,10 +4,10 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ssti.mediacapturegalleryapp.domain.model.MediaItem
-import com.ssti.mediacapturegalleryapp.domain.model.MediaType
 import com.ssti.mediacapturegalleryapp.domain.usecase.AddMediaUseCase
 import com.ssti.mediacapturegalleryapp.domain.usecase.DeleteMediaUseCase
 import com.ssti.mediacapturegalleryapp.domain.usecase.GetMediaListUseCase
+import com.ssti.mediacapturegalleryapp.util.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,27 +22,17 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class MediaViewModel @Inject constructor(
-    private val getMediaListUseCase: GetMediaListUseCase,
-    private val addMediaUseCase: AddMediaUseCase,
-    private val deleteMediaUseCase: DeleteMediaUseCase
-) : ViewModel() {
-
+class MediaViewModel @Inject constructor(private val getMediaListUseCase: GetMediaListUseCase, private val addMediaUseCase: AddMediaUseCase, private val deleteMediaUseCase: DeleteMediaUseCase) : ViewModel() {
     private val _uiState = MutableStateFlow<GalleryUiState>(GalleryUiState.Loading)
     val uiState: StateFlow<GalleryUiState> = _uiState.asStateFlow()
-
     private val _error = MutableSharedFlow<String>()
     val error: SharedFlow<String> = _error.asSharedFlow()
-
     private val _successMessage = MutableSharedFlow<String>()
     val successMessage: SharedFlow<String> = _successMessage.asSharedFlow()
-
     private var loadJob: Job? = null
-
     init {
         loadMedia()
     }
-
     fun refreshMedia() {
         loadMedia()
     }

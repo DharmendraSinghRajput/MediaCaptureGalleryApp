@@ -3,7 +3,7 @@ package com.ssti.mediacapturegalleryapp.data.local.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.ssti.mediacapturegalleryapp.domain.model.MediaItem
-import com.ssti.mediacapturegalleryapp.domain.model.MediaType
+import com.ssti.mediacapturegalleryapp.util.MediaType
 
 @Entity(tableName = "media_table")
 data class MediaEntity(

@@ -1,13 +1,10 @@
 package com.ssti.mediacapturegalleryapp
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
-import android.view.MenuItem
 import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
@@ -28,11 +25,13 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.ssti.mediacapturegalleryapp.databinding.ActivityMainBinding
 import com.ssti.mediacapturegalleryapp.databinding.BottomSheetAddAttachmentBinding
 import com.ssti.mediacapturegalleryapp.domain.model.MediaItem
-import com.ssti.mediacapturegalleryapp.domain.model.MediaType
 import com.ssti.mediacapturegalleryapp.presentation.fullscreen.FullScreenActivity
 import com.ssti.mediacapturegalleryapp.presentation.gallery.GalleryUiState
 import com.ssti.mediacapturegalleryapp.presentation.gallery.MediaAdapter
 import com.ssti.mediacapturegalleryapp.presentation.gallery.MediaViewModel
+import com.ssti.mediacapturegalleryapp.util.Constants
+import com.ssti.mediacapturegalleryapp.util.MediaType
+import com.ssti.mediacapturegalleryapp.util.PermissionUtils
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -82,7 +81,6 @@ class MainActivity : AppCompatActivity() {
         
         setSupportActionBar(binding.toolbar)
         
-        // Status Bar Color logic
         val primaryColor = ContextCompat.getColor(this, R.color.primary)
         changeStatusBarColor(primaryColor)
 
@@ -107,15 +105,11 @@ class MainActivity : AppCompatActivity() {
         val actionView = menuItem.actionView
         val themeSwitch = actionView?.findViewById<SwitchCompat>(R.id.themeSwitch)
         
-        // PHONE SETTINGS के हिसाब से switch को sync करना
-        val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        val isDarkModeActive = currentNightMode == Configuration.UI_MODE_NIGHT_YES
+        val isDarkModeActive = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         
-        // Listener हटाकर state set करें ताकि loop न बने
         themeSwitch?.setOnCheckedChangeListener(null)
         themeSwitch?.isChecked = isDarkModeActive
         
-        // दोबारा Listener जोड़ें manual click के लिए
         themeSwitch?.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
@@ -219,35 +213,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun createTempUri(extension: String): Uri {
         val file = File(getExternalFilesDir(null), "temp_media_${System.currentTimeMillis()}$extension")
-        return FileProvider.getUriForFile(this, "${applicationContext.packageName}.fileprovider", file)
+        return FileProvider.getUriForFile(this, "${applicationContext.packageName}${Constants.FILE_PROVIDER_AUTHORITY}", file)
     }
 
     private fun openFullScreen(mediaItem: MediaItem) {
         val intent = Intent(this, FullScreenActivity::class.java).apply {
-            putExtra("file_path", mediaItem.filePath)
-            putExtra("media_type", mediaItem.mediaType.name)
-            putExtra("created_at", mediaItem.createdAt)
+            putExtra(Constants.EXTRA_FILE_PATH, mediaItem.filePath)
+            putExtra(Constants.EXTRA_MEDIA_TYPE, mediaItem.mediaType.name)
+            putExtra(Constants.EXTRA_CREATED_AT, mediaItem.createdAt)
         }
         startActivity(intent)
     }
 
     private fun checkPermissions() {
-        val permissions = mutableListOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
-        
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
-            permissions.add(Manifest.permission.READ_MEDIA_VIDEO)
-        } else {
-            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
-            permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        }
-
-        val toRequest = permissions.filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }
-
-        if (toRequest.isNotEmpty()) {
-            requestPermissionLauncher.launch(toRequest.toTypedArray())
+        if (!PermissionUtils.hasPermissions(this)) {
+            requestPermissionLauncher.launch(PermissionUtils.getRequiredPermissions())
         }
     }
 }

@@ -9,7 +9,7 @@ import coil.decode.VideoFrameDecoder
 import coil.load
 import com.ssti.mediacapturegalleryapp.databinding.ItemMediaBinding
 import com.ssti.mediacapturegalleryapp.domain.model.MediaItem
-import com.ssti.mediacapturegalleryapp.domain.model.MediaType
+import com.ssti.mediacapturegalleryapp.util.MediaType
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

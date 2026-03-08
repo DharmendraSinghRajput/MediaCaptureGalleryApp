@@ -1,12 +1,11 @@
 package com.ssti.mediacapturegalleryapp.domain.usecase
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import com.ssti.mediacapturegalleryapp.domain.model.MediaItem
-import com.ssti.mediacapturegalleryapp.domain.model.MediaType
 import com.ssti.mediacapturegalleryapp.domain.repository.MediaRepository
+import com.ssti.mediacapturegalleryapp.util.MediaType
 import com.ssti.mediacapturegalleryapp.util.WatermarkUtil
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -33,9 +32,6 @@ class AddMediaUseCase @Inject constructor(
             
             WatermarkUtil.applyWatermarkToImage(context, bitmap, fileName, outputFile)
         } else {
-            // For Videos: Copy the ORIGINAL file directly.
-            // DO NOT use Transformer here to avoid the distortion shown in your image.
-            // The watermark is now handled by the UI overlay in FullScreenActivity.
             context.contentResolver.openInputStream(uri)?.use { input ->
                 FileOutputStream(outputFile).use { output ->
                     input.copyTo(output)

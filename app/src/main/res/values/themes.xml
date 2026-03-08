@@ -11,8 +11,27 @@
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
+
+        <!-- Bottom Sheet Theme -->
+        <item name="bottomSheetDialogTheme">@style/RoundedBottomSheetDialog</item>
     </style>
 
     <style name="Theme.MediaCaptureGalleryApp" parent="Base.Theme.MediaCaptureGalleryApp" />
+
+    <!-- Rounded Bottom Sheet Style -->
+    <style name="RoundedBottomSheetDialog" parent="Theme.MaterialComponents.DayNight.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/RoundedBottomSheetStyle</item>
+    </style>
+
+    <style name="RoundedBottomSheetStyle" parent="Widget.MaterialComponents.BottomSheet.Modal">
+        <item name="shapeAppearanceOverlay">@style/RoundedShapeAppearance</item>
+    </style>
+
+    <style name="RoundedShapeAppearance" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">12dp</item>
+        <item name="cornerSizeTopRight">12dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
 </resources>

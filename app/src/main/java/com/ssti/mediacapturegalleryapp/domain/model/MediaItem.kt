@@ -1,5 +1,7 @@
 package com.ssti.mediacapturegalleryapp.domain.model
 
+import com.ssti.mediacapturegalleryapp.util.MediaType
+
 data class MediaItem(
     val id: Long = 0,
     val filePath: String,
@@ -7,7 +9,3 @@ data class MediaItem(
     val mediaType: MediaType,
     val createdAt: Long
 )
-
-enum class MediaType {
-    IMAGE, VIDEO
-}

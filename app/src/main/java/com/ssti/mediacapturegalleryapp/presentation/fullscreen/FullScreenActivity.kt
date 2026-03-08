@@ -3,6 +3,10 @@ package com.ssti.mediacapturegalleryapp.presentation.fullscreen
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.style.StyleSpan
+import android.text.style.RelativeSizeSpan
+import android.graphics.Typeface
 import android.view.View
 import android.view.WindowManager
 import android.widget.MediaController
@@ -13,7 +17,8 @@ import androidx.core.view.WindowInsetsControllerCompat
 import coil.load
 import com.ssti.mediacapturegalleryapp.R
 import com.ssti.mediacapturegalleryapp.databinding.ActivityFullScreenBinding
-import com.ssti.mediacapturegalleryapp.domain.model.MediaType
+import com.ssti.mediacapturegalleryapp.util.Constants
+import com.ssti.mediacapturegalleryapp.util.MediaType
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -27,15 +32,17 @@ class FullScreenActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityFullScreenBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // UI Setup
         val primaryColor = ContextCompat.getColor(this, R.color.primary)
         changeStatusBarColor(primaryColor)
-        val filePath = intent.getStringExtra("file_path") ?: return
-        val mediaType = intent.getStringExtra("media_type") ?: return
-        val createdAt = intent.getLongExtra("created_at", 0)
-
         binding.closeButton.setOnClickListener { finish() }
 
-        // Setup the professional UI watermark
+        // Data Retrieval using Constants
+        val filePath = intent.getStringExtra(Constants.EXTRA_FILE_PATH) ?: return
+        val mediaType = intent.getStringExtra(Constants.EXTRA_MEDIA_TYPE) ?: return
+        val createdAt = intent.getLongExtra(Constants.EXTRA_CREATED_AT, 0)
+
         setupWatermarkOverlay(createdAt, filePath)
 
         if (mediaType == MediaType.IMAGE.name) {
@@ -46,64 +53,65 @@ class FullScreenActivity : AppCompatActivity() {
     }
 
     private fun setupWatermarkOverlay(createdAt: Long, filePath: String) {
-        if (createdAt > 0) {
-            // Get Device Name (e.g., IQOO Z10 5G)
-            val manufacturer = Build.MANUFACTURER
-            val model = Build.MODEL
-            val deviceName = if (model.startsWith(manufacturer, ignoreCase = true)) {
-                model
-            } else {
-                "$manufacturer $model"
-            }.uppercase()
+        if (createdAt <= 0) return
 
-            // Format Date (e.g., 03/06/2026 ,19:01)
-            val formattedDate = SimpleDateFormat("dd/MM/yyyy ,HH:mm", Locale.getDefault()).format(Date(createdAt))
-
-            // Get FileName from path
-            val fileName = File(filePath).name
-
-            // Layout content: Line 1: FileName, Line 2: DeviceName | Timestamp
-            val watermarkText = "$fileName\n$deviceName | $formattedDate"
-
-            binding.tvWatermarkOverlay.text = watermarkText
-            binding.tvWatermarkOverlay.visibility = View.VISIBLE
+        val deviceName = getFormattedDeviceName()
+        val formattedDate = SimpleDateFormat(Constants.DATE_FORMAT_DISPLAY, Locale.getDefault()).format(Date(createdAt))
+        val fileName = File(filePath).name
+        
+        val line1 = fileName
+        val line2 = "$deviceName | $formattedDate"
+        val fullText = "$line1\n$line2"
+        
+        val spannable = SpannableString(fullText).apply {
+            setSpan(StyleSpan(Typeface.BOLD), 0, line1.length, 0)
+            setSpan(RelativeSizeSpan(1.1f), 0, line1.length, 0)
         }
+        
+        binding.tvWatermarkOverlay.text = spannable
+        binding.watermarkContainer.visibility = View.VISIBLE
+    }
+
+    private fun getFormattedDeviceName(): String {
+        val manufacturer = Build.MANUFACTURER
+        val model = Build.MODEL
+        return if (model.startsWith(manufacturer, ignoreCase = true)) {
+            model
+        } else {
+            "$manufacturer $model"
+        }.uppercase()
     }
 
     private fun showImage(filePath: String) {
-       // binding.watermarkContainer.visibility = View.GONE
-        binding.fullImageView.visibility = View.VISIBLE
-
+        binding.fullImageView.apply {
+            visibility = View.VISIBLE
+            load(filePath)
+        }
         binding.videoView.visibility = View.GONE
-        binding.fullImageView.load(filePath)
     }
 
     private fun showVideo(filePath: String) {
-        binding.videoView.visibility = View.VISIBLE
-        binding.fullImageView.visibility = View.GONE
-
-        // Add playback controls (Pause, Seek)
-        val mediaController = MediaController(this)
-        mediaController.setAnchorView(binding.videoView)
-        binding.videoView.setMediaController(mediaController)
-
-        binding.videoView.setVideoURI(Uri.parse(filePath))
-
-        // Auto-play when ready
-        binding.videoView.setOnPreparedListener { 
-            binding.videoView.start() 
+        binding.videoView.apply {
+            visibility = View.VISIBLE
+            setMediaController(MediaController(this@FullScreenActivity).apply {
+                setAnchorView(binding.videoView)
+            })
+            setVideoURI(Uri.parse(filePath))
+            setOnPreparedListener { start() }
         }
+        binding.fullImageView.visibility = View.GONE
     }
 
     override fun onDestroy() {
         super.onDestroy()
         binding.videoView.stopPlayback()
     }
-    private fun changeStatusBarColor(color: Int) {
-        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-        window.statusBarColor = color
 
-        // Automatically adjust icon colors (Light/Dark) based on the background brightness
+    private fun changeStatusBarColor(color: Int) {
+        window.apply {
+            addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            statusBarColor = color
+        }
         val isLightBackground = ColorUtils.calculateLuminance(color) > 0.5
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLightBackground
     }
