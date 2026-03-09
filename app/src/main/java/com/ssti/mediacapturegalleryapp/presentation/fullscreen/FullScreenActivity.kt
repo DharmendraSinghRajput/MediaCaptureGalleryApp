@@ -25,33 +25,28 @@ import java.util.Date
 import java.util.Locale
 
 class FullScreenActivity : AppCompatActivity() {
-
-    private lateinit var binding: ActivityFullScreenBinding
-
+    val mBinding by lazy { ActivityFullScreenBinding.inflate(layoutInflater) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityFullScreenBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(mBinding.root)
+        mBinding.apply {
+            val primaryColor = ContextCompat.getColor(this@FullScreenActivity, R.color.primary)
+            changeStatusBarColor(primaryColor)
+            closeButton.setOnClickListener { finish() }
 
-        // UI Setup
-        val primaryColor = ContextCompat.getColor(this, R.color.primary)
-        changeStatusBarColor(primaryColor)
-        binding.closeButton.setOnClickListener { finish() }
+            val filePath = intent.getStringExtra(Constants.EXTRA_FILE_PATH) ?: return
+            val mediaType = intent.getStringExtra(Constants.EXTRA_MEDIA_TYPE) ?: return
+            val createdAt = intent.getLongExtra(Constants.EXTRA_CREATED_AT, 0)
 
-        // Data Retrieval using Constants
-        val filePath = intent.getStringExtra(Constants.EXTRA_FILE_PATH) ?: return
-        val mediaType = intent.getStringExtra(Constants.EXTRA_MEDIA_TYPE) ?: return
-        val createdAt = intent.getLongExtra(Constants.EXTRA_CREATED_AT, 0)
+            setupWatermarkOverlay(createdAt, filePath)
 
-        setupWatermarkOverlay(createdAt, filePath)
-
-        if (mediaType == MediaType.IMAGE.name) {
-            showImage(filePath)
-        } else {
-            showVideo(filePath)
+            if (mediaType == MediaType.IMAGE.name) {
+                showImage(filePath)
+            } else {
+                showVideo(filePath)
+            }
         }
     }
-
     private fun setupWatermarkOverlay(createdAt: Long, filePath: String) {
         if (createdAt <= 0) return
 
@@ -68,8 +63,8 @@ class FullScreenActivity : AppCompatActivity() {
             setSpan(RelativeSizeSpan(1.1f), 0, line1.length, 0)
         }
         
-        binding.tvWatermarkOverlay.text = spannable
-        binding.watermarkContainer.visibility = View.VISIBLE
+        mBinding.tvWatermarkOverlay.text = spannable
+        mBinding.watermarkContainer.visibility = View.VISIBLE
     }
 
     private fun getFormattedDeviceName(): String {
@@ -83,28 +78,28 @@ class FullScreenActivity : AppCompatActivity() {
     }
 
     private fun showImage(filePath: String) {
-        binding.fullImageView.apply {
+        mBinding.fullImageView.apply {
             visibility = View.VISIBLE
             load(filePath)
         }
-        binding.videoView.visibility = View.GONE
+        mBinding.videoView.visibility = View.GONE
     }
 
     private fun showVideo(filePath: String) {
-        binding.videoView.apply {
+        mBinding.videoView.apply {
             visibility = View.VISIBLE
             setMediaController(MediaController(this@FullScreenActivity).apply {
-                setAnchorView(binding.videoView)
+                setAnchorView(mBinding.videoView)
             })
             setVideoURI(Uri.parse(filePath))
             setOnPreparedListener { start() }
         }
-        binding.fullImageView.visibility = View.GONE
+        mBinding.fullImageView.visibility = View.GONE
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        binding.videoView.stopPlayback()
+        mBinding.videoView.stopPlayback()
     }
 
     private fun changeStatusBarColor(color: Int) {

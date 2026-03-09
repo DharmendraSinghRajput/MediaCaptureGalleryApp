@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.ssti.mediacapturegalleryapp.data.local.AppDatabase
 import com.ssti.mediacapturegalleryapp.data.local.dao.MediaDao
+import com.ssti.mediacapturegalleryapp.util.Constants
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,7 +22,7 @@ object DatabaseModule {
         return Room.databaseBuilder(
             context,
             AppDatabase::class.java,
-            "media_database"
+            Constants.MEDIA_DATA_BASE
         ).build()
     }
 

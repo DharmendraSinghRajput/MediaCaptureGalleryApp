@@ -25,7 +25,6 @@ class AddMediaUseCase @Inject constructor(
         val outputFile = File(outputDir, "$fileName$extension")
 
         if (mediaType == MediaType.IMAGE) {
-            // For Images: Draw permanent watermark (works well for static files)
             val inputStream = context.contentResolver.openInputStream(uri)
             val bitmap = BitmapFactory.decodeStream(inputStream)
             inputStream?.close()

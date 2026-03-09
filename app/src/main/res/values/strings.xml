@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">MediaCaptureGalleryApp</string>
+    <string name="error_failed_to_load">Failed to load media</string>
+    <string name="msg_media_added">Media added with watermark</string>
+    <string name="error_process_media">Failed to process media</string>
+    <string name="msg_item_deleted">Item deleted</string>
+    <string name="error_delete_item">Failed to delete item</string>
 </resources>

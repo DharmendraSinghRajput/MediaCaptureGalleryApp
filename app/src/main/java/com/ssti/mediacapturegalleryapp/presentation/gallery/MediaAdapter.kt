@@ -9,6 +9,7 @@ import coil.decode.VideoFrameDecoder
 import coil.load
 import com.ssti.mediacapturegalleryapp.databinding.ItemMediaBinding
 import com.ssti.mediacapturegalleryapp.domain.model.MediaItem
+import com.ssti.mediacapturegalleryapp.util.Constants
 import com.ssti.mediacapturegalleryapp.util.MediaType
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -30,10 +31,9 @@ class MediaAdapter(
 
     inner class MediaViewHolder(private val binding: ItemMediaBinding) :
         RecyclerView.ViewHolder(binding.root) {
-
         fun bind(item: MediaItem) {
             binding.fileNameText.text = item.fileName
-            val dateFormat = SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault())
+            val dateFormat = SimpleDateFormat(Constants.DATE_FORMAT_WATERMARK, Locale.getDefault())
             binding.dateText.text = dateFormat.format(Date(item.createdAt))
 
             binding.thumbnailImageView.load(item.filePath) {

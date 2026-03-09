@@ -35,8 +35,7 @@ object WatermarkUtil {
     ): File = withContext(Dispatchers.IO) {
         val workingBitmap = inputBitmap.copy(Bitmap.Config.ARGB_8888, true)
         val canvas = Canvas(workingBitmap)
-
-        val timestamp = SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault()).format(Date())
+        val timestamp = SimpleDateFormat(Constants.DATE_FORMAT_WATERMARK, Locale.getDefault()).format(Date())
         
         val paintMain = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE

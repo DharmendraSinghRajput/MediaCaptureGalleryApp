@@ -23,7 +23,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- Watermark Overlay Container -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/watermarkContainer"
         android:layout_width="match_parent"

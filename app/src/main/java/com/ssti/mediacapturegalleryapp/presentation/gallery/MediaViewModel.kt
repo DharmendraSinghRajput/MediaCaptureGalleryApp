@@ -1,8 +1,10 @@
 package com.ssti.mediacapturegalleryapp.presentation.gallery
 
+import android.app.Application
 import android.net.Uri
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.ssti.mediacapturegalleryapp.R
 import com.ssti.mediacapturegalleryapp.domain.model.MediaItem
 import com.ssti.mediacapturegalleryapp.domain.usecase.AddMediaUseCase
 import com.ssti.mediacapturegalleryapp.domain.usecase.DeleteMediaUseCase
@@ -22,17 +24,29 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class MediaViewModel @Inject constructor(private val getMediaListUseCase: GetMediaListUseCase, private val addMediaUseCase: AddMediaUseCase, private val deleteMediaUseCase: DeleteMediaUseCase) : ViewModel() {
+class MediaViewModel @Inject constructor(
+    application: Application,
+    private val getMediaListUseCase: GetMediaListUseCase,
+    private val addMediaUseCase: AddMediaUseCase,
+    private val deleteMediaUseCase: DeleteMediaUseCase) : AndroidViewModel(application) {
+
+    private val context = application.applicationContext
+
     private val _uiState = MutableStateFlow<GalleryUiState>(GalleryUiState.Loading)
     val uiState: StateFlow<GalleryUiState> = _uiState.asStateFlow()
+
     private val _error = MutableSharedFlow<String>()
     val error: SharedFlow<String> = _error.asSharedFlow()
+
     private val _successMessage = MutableSharedFlow<String>()
     val successMessage: SharedFlow<String> = _successMessage.asSharedFlow()
+
     private var loadJob: Job? = null
+
     init {
         loadMedia()
     }
+
     fun refreshMedia() {
         loadMedia()
     }
@@ -43,7 +57,7 @@ class MediaViewModel @Inject constructor(private val getMediaListUseCase: GetMed
         loadJob = viewModelScope.launch {
             getMediaListUseCase()
                 .catch { e ->
-                    _uiState.value = GalleryUiState.Error(e.message ?: "Failed to load media")
+                    _uiState.value = GalleryUiState.Error(context.getString(R.string.error_failed_to_load))
                 }
                 .collectLatest { list ->
                     _uiState.value = GalleryUiState.Success(list)
@@ -56,10 +70,10 @@ class MediaViewModel @Inject constructor(private val getMediaListUseCase: GetMed
             _uiState.value = GalleryUiState.Loading
             try {
                 addMediaUseCase(uri, mediaType)
-                _successMessage.emit("Media added with watermark")
+                _successMessage.emit(context.getString(R.string.msg_media_added))
             } catch (e: Exception) {
-                _error.emit(e.message ?: "Failed to process media")
-                loadMedia() // Refresh state
+                _error.emit(context.getString(R.string.error_process_media))
+                loadMedia()
             }
         }
     }
@@ -68,9 +82,9 @@ class MediaViewModel @Inject constructor(private val getMediaListUseCase: GetMed
         viewModelScope.launch {
             try {
                 deleteMediaUseCase(mediaItem)
-                _successMessage.emit("Item deleted")
+                _successMessage.emit(context.getString(R.string.msg_item_deleted))
             } catch (e: Exception) {
-                _error.emit(e.message ?: "Failed to delete item")
+                _error.emit(context.getString(R.string.error_delete_item))
             }
         }
     }
