@@ -21,15 +21,15 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.ssti.mediacapturegalleryapp.R
 import com.ssti.mediacapturegalleryapp.databinding.ActivityMainBinding
-import com.ssti.mediacapturegalleryapp.databinding.BottomSheetAddAttachmentBinding
 import com.ssti.mediacapturegalleryapp.domain.model.MediaItem
 import com.ssti.mediacapturegalleryapp.presentation.gallery.GalleryUiState
 import com.ssti.mediacapturegalleryapp.presentation.gallery.MediaAdapter
 import com.ssti.mediacapturegalleryapp.presentation.gallery.MediaViewModel
+import com.ssti.mediacapturegalleryapp.util.BottomSheetUtils
 import com.ssti.mediacapturegalleryapp.util.Constants
+import com.ssti.mediacapturegalleryapp.util.MediaPickerHelper
 import com.ssti.mediacapturegalleryapp.util.MediaType
 import com.ssti.mediacapturegalleryapp.util.PermissionUtils
 import dagger.hilt.android.AndroidEntryPoint
@@ -39,55 +39,30 @@ import java.io.File
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-    val mBinding by lazy { ActivityMainBinding.inflate(layoutInflater) }
+    private val binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
     private val viewModel: MediaViewModel by viewModels()
     private lateinit var adapter: MediaAdapter
-    private var tempUri: Uri? = null
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (!permissions.all { it.value }) {
-            Toast.makeText(this, "Permissions required for camera and storage", Toast.LENGTH_SHORT)
-                .show()
-        }
-    }
-
-    private val takePhotoLauncher =
-        registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            if (success) {
-                tempUri?.let { viewModel.addMedia(it, MediaType.IMAGE) }
-            }
-        }
-
-    private val recordVideoLauncher =
-        registerForActivityResult(ActivityResultContracts.CaptureVideo()) { success ->
-            if (success) {
-                tempUri?.let { viewModel.addMedia(it, MediaType.VIDEO) }
-            }
-        }
-
-    private val pickPhotoLauncher =
-        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            uri?.let { viewModel.addMedia(it, MediaType.IMAGE) }
-        }
-
-    private val pickVideoLauncher =
-        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            uri?.let { viewModel.addMedia(it, MediaType.VIDEO) }
-        }
+    private lateinit var mediaPickerHelper: MediaPickerHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(mBinding.root)
-        mBinding.apply {
-            setSupportActionBar(toolbar)
-            val primaryColor = ContextCompat.getColor(this@MainActivity, R.color.primary)
-            changeStatusBarColor(primaryColor)
-            setupRecyclerView()
-            setupListeners()
-            observeViewModel()
-            checkPermissions()
+        setContentView(binding.root)
+        
+        mediaPickerHelper = MediaPickerHelper(this) { uri, mediaType ->
+            viewModel.addMedia(uri, mediaType)
         }
+        
+        setupToolbar()
+        setupRecyclerView()
+        setupListeners()
+        observeViewModel()
+        checkPermissions()
+    }
+
+    private fun setupToolbar() {
+        setSupportActionBar(binding.toolbar)
+        val primaryColor = ContextCompat.getColor(this, R.color.primary)
+        changeStatusBarColor(primaryColor)
     }
 
     private fun changeStatusBarColor(color: Int) {
@@ -128,16 +103,16 @@ class MainActivity : AppCompatActivity() {
             onItemClick = { openFullScreen(it) },
             onDeleteClick = { viewModel.deleteMedia(it) }
         )
-        mBinding.recyclerView.layoutManager = LinearLayoutManager(this)
-        mBinding.recyclerView.adapter = adapter
+        binding.recyclerView.layoutManager = LinearLayoutManager(this)
+        binding.recyclerView.adapter = adapter
     }
 
     private fun setupListeners() {
-        mBinding.addAttachmentFab.setOnClickListener {
+        binding.addAttachmentFab.setOnClickListener {
             showAddAttachmentBottomSheet()
         }
 
-        mBinding.swipeRefreshLayout.setOnRefreshListener {
+        binding.swipeRefreshLayout.setOnRefreshListener {
             viewModel.refreshMedia()
         }
     }
@@ -149,25 +124,25 @@ class MainActivity : AppCompatActivity() {
                     viewModel.uiState.collectLatest { state ->
                         when (state) {
                             is GalleryUiState.Loading -> {
-                                mBinding.swipeRefreshLayout.isRefreshing = true
-                                mBinding.progressBar.visibility =
-                                    if (!mBinding.swipeRefreshLayout.isRefreshing) View.VISIBLE else View.GONE
-                                mBinding.addAttachmentFab.isEnabled = false
+                                binding.swipeRefreshLayout.isRefreshing = true
+                                binding.progressBar.visibility =
+                                    if (!binding.swipeRefreshLayout.isRefreshing) View.VISIBLE else View.GONE
+                                binding.addAttachmentFab.isEnabled = false
                             }
 
                             is GalleryUiState.Success -> {
-                                mBinding.swipeRefreshLayout.isRefreshing = false
-                                mBinding.progressBar.visibility = View.GONE
-                                mBinding.addAttachmentFab.isEnabled = true
+                                binding.swipeRefreshLayout.isRefreshing = false
+                                binding.progressBar.visibility = View.GONE
+                                binding.addAttachmentFab.isEnabled = true
                                 adapter.submitList(state.mediaList)
-                                mBinding.emptyStateText.visibility =
+                                binding.emptyStateText.visibility =
                                     if (state.mediaList.isEmpty()) View.VISIBLE else View.GONE
                             }
 
                             is GalleryUiState.Error -> {
-                                mBinding.swipeRefreshLayout.isRefreshing = false
-                                mBinding.progressBar.visibility = View.GONE
-                                mBinding.addAttachmentFab.isEnabled = true
+                                binding.swipeRefreshLayout.isRefreshing = false
+                                binding.progressBar.visibility = View.GONE
+                                binding.addAttachmentFab.isEnabled = true
                                 Toast.makeText(this@MainActivity, state.message, Toast.LENGTH_LONG)
                                     .show()
                             }
@@ -189,33 +164,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showAddAttachmentBottomSheet() {
-        val bottomSheet = BottomSheetDialog(this)
-        val bottomSheetBinding = BottomSheetAddAttachmentBinding.inflate(layoutInflater)
-        bottomSheet.setContentView(bottomSheetBinding.root)
-
-        bottomSheetBinding.btnCapturePhoto.setOnClickListener {
-            tempUri = createTempUri(".jpg")
-            tempUri?.let { takePhotoLauncher.launch(it) }
-            bottomSheet.dismiss()
-        }
-
-        bottomSheetBinding.btnRecordVideo.setOnClickListener {
-            tempUri = createTempUri(".mp4")
-            tempUri?.let { recordVideoLauncher.launch(it) }
-            bottomSheet.dismiss()
-        }
-
-        bottomSheetBinding.btnSelectPhoto.setOnClickListener {
-            pickPhotoLauncher.launch("image/*")
-            bottomSheet.dismiss()
-        }
-
-        bottomSheetBinding.btnSelectVideo.setOnClickListener {
-            pickVideoLauncher.launch("video/*")
-            bottomSheet.dismiss()
-        }
-
-        bottomSheet.show()
+        BottomSheetUtils.showAddAttachmentBottomSheet(
+            context = this,
+            onCapturePhoto = {
+                val tempUri = createTempUri(".jpg")
+                mediaPickerHelper.launchCameraForImage(tempUri)
+            },
+            onRecordVideo = {
+                val tempUri = createTempUri(".mp4")
+                mediaPickerHelper.launchCameraForVideo(tempUri)
+            },
+            onSelectPhoto = { mediaPickerHelper.launchGalleryForImage() },
+            onSelectVideo = { mediaPickerHelper.launchGalleryForVideo() }
+        )
     }
 
     private fun createTempUri(extension: String): Uri {
@@ -238,6 +199,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkPermissions() {
+        val requestPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            if (!permissions.all { it.value }) {
+                Toast.makeText(this, "Permissions required for camera and storage", Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
+
         if (!PermissionUtils.hasPermissions(this)) {
             requestPermissionLauncher.launch(PermissionUtils.getRequiredPermissions())
         }
