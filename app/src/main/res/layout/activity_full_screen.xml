@@ -4,6 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@android:color/black"
     android:fitsSystemWindows="true">
 
     <ImageView
@@ -14,14 +15,11 @@
         android:scaleType="fitCenter"
         android:contentDescription="@string/app_name" />
 
-    <androidx.media3.ui.PlayerView
-        android:id="@+id/playerView"
+    <VideoView
+        android:id="@+id/videoView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone"
-        app:use_controller="true"
-        app:show_timeout="3000"
-        app:hide_on_touch="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -37,7 +35,7 @@
         android:elevation="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
-        app:tint="@android:color/darker_gray"
+        app:tint="@android:color/white"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
 

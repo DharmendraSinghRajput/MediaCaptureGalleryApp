@@ -1,4 +1,4 @@
-package com.ssti.mediacapturegalleryapp.presentation.fullscreen
+package com.ssti.mediacapturegalleryapp.presentation.screen
 
 import android.net.Uri
 import android.os.Bundle
@@ -10,18 +10,10 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.core.view.WindowInsetsControllerCompat
 import coil.load
-import com.ssti.mediacapturegalleryapp.R
 import com.ssti.mediacapturegalleryapp.databinding.ActivityFullScreenBinding
 import com.ssti.mediacapturegalleryapp.util.Constants
 import com.ssti.mediacapturegalleryapp.util.MediaType
 
-/**
- * FullScreenActivity: A clean, immersive viewer for watermarked media.
- * Fulfills Requirement 3.2: 
- * - Uses standard VideoView for media playback.
- * - Supports autoplay.
- * - Minimal UI as watermark is permanently burned into the media frames.
- */
 class FullScreenActivity : AppCompatActivity() {
 
     private val binding by lazy { ActivityFullScreenBinding.inflate(layoutInflater) }
@@ -35,7 +27,6 @@ class FullScreenActivity : AppCompatActivity() {
     }
 
     private fun setupSystemUI() {
-        // Make status bar black for an immersive full-screen experience
         changeStatusBarColor(ContextCompat.getColor(this, android.R.color.black))
         binding.closeButton.setOnClickListener { finish() }
     }
@@ -63,15 +54,13 @@ class FullScreenActivity : AppCompatActivity() {
         binding.videoView.visibility = View.VISIBLE
         binding.fullImageView.visibility = View.GONE
 
-        // Using VideoView with MediaController for standard playback
         val mediaController = MediaController(this)
         mediaController.setAnchorView(binding.videoView)
         binding.videoView.setMediaController(mediaController)
         
         binding.videoView.setVideoURI(Uri.parse(filePath))
         
-        // Autoplay requirement
-        binding.videoView.setOnPreparedListener { 
+        binding.videoView.setOnPreparedListener {
             binding.videoView.start() 
         }
     }

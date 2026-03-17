@@ -1,4 +1,4 @@
-package com.ssti.mediacapturegalleryapp.presentation.fullscreen
+package com.ssti.mediacapturegalleryapp.presentation.screen
 
 import android.content.Intent
 import android.content.res.Configuration
@@ -33,10 +33,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.io.File
 
-/**
- * MainActivity: The primary entry point and Gallery screen.
- * Implements modern UI practices including SwipeRefresh, Theme Toggling, and System Insets.
- */
+
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
@@ -45,7 +42,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: MediaAdapter
     private lateinit var mediaPickerHelper: MediaPickerHelper
 
-    // Must be declared at class level
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -65,7 +61,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initHelpers() {
-        // Callback triggers UseCase which handles the permanent Canvas/Transformer watermarking
         mediaPickerHelper = MediaPickerHelper(this) { uri, mediaType ->
             viewModel.addMedia(uri, mediaType)
         }
@@ -97,19 +92,16 @@ class MainActivity : AppCompatActivity() {
     private fun observeViewModel() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                // UI State Observer
                 launch {
                     viewModel.uiState.collectLatest { state ->
                         handleUiState(state)
                     }
                 }
-                // Error Event Observer
                 launch {
                     viewModel.error.collectLatest { msg ->
                         Toast.makeText(this@MainActivity, msg, Toast.LENGTH_LONG).show()
                     }
                 }
-                // Success Event Observer
                 launch {
                     viewModel.successMessage.collectLatest { msg ->
                         Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()

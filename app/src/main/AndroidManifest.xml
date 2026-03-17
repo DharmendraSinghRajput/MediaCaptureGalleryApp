@@ -22,7 +22,7 @@
         android:theme="@style/Theme.MediaCaptureGalleryApp">
         
         <activity
-            android:name=".presentation.fullscreen.MainActivity"
+            android:name=".presentation.screen.MainActivity"
             android:exported="true"
             android:screenOrientation="portrait"
             >
@@ -33,7 +33,7 @@
         </activity>
 
         <activity
-            android:name="com.ssti.mediacapturegalleryapp.presentation.fullscreen.FullScreenActivity"
+            android:name="com.ssti.mediacapturegalleryapp.presentation.screen.FullScreenActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize" />
