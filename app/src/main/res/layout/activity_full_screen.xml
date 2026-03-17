@@ -4,67 +4,40 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/black">
+    android:fitsSystemWindows="true">
 
     <ImageView
         android:id="@+id/fullImageView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone"
-        android:scaleType="fitCenter"/>
+        android:scaleType="fitCenter"
+        android:contentDescription="@string/app_name" />
 
-    <VideoView
-        android:id="@+id/videoView"
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/playerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone"
+        app:use_controller="true"
+        app:show_timeout="3000"
+        app:hide_on_touch="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/watermarkContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#FF000000"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="50dp"
-        app:layout_constraintBottom_toBottomOf="parent">
-
-        <ImageView
-            android:id="@+id/ivWatermarkLogo"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_company_logo"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/tvWatermarkOverlay"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:textColor="@android:color/white"
-            android:textSize="14sp"
-            android:lineSpacingExtra="2dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/ivWatermarkLogo"
-            app:layout_constraintTop_toTopOf="parent" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
     <ImageButton
         android:id="@+id/closeButton"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginTop="30dp"
-        android:layout_marginStart="12dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_margin="16dp"
+        android:padding="8dp"
+        android:scaleType="centerInside"
+        android:elevation="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
-        app:tint="@android:color/white"
+        app:tint="@android:color/darker_gray"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
 

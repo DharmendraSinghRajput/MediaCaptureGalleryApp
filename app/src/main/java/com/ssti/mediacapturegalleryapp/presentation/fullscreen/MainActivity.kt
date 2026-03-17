@@ -27,166 +27,128 @@ import com.ssti.mediacapturegalleryapp.domain.model.MediaItem
 import com.ssti.mediacapturegalleryapp.presentation.gallery.GalleryUiState
 import com.ssti.mediacapturegalleryapp.presentation.gallery.MediaAdapter
 import com.ssti.mediacapturegalleryapp.presentation.gallery.MediaViewModel
-import com.ssti.mediacapturegalleryapp.util.BottomSheetUtils
-import com.ssti.mediacapturegalleryapp.util.Constants
-import com.ssti.mediacapturegalleryapp.util.MediaPickerHelper
-import com.ssti.mediacapturegalleryapp.util.MediaType
-import com.ssti.mediacapturegalleryapp.util.PermissionUtils
+import com.ssti.mediacapturegalleryapp.util.*
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.io.File
 
+/**
+ * MainActivity: The primary entry point and Gallery screen.
+ * Implements modern UI practices including SwipeRefresh, Theme Toggling, and System Insets.
+ */
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+
     private val binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
     private val viewModel: MediaViewModel by viewModels()
     private lateinit var adapter: MediaAdapter
     private lateinit var mediaPickerHelper: MediaPickerHelper
 
+    // Must be declared at class level
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (!permissions.all { it.value }) {
+            Toast.makeText(this, getString(R.string.error_delete_item), Toast.LENGTH_SHORT).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         
-        mediaPickerHelper = MediaPickerHelper(this) { uri, mediaType ->
-            viewModel.addMedia(uri, mediaType)
-        }
-        
-        setupToolbar()
-        setupRecyclerView()
-        setupListeners()
+        initHelpers()
+        setupUI()
         observeViewModel()
         checkPermissions()
     }
 
-    private fun setupToolbar() {
-        setSupportActionBar(binding.toolbar)
-        val primaryColor = ContextCompat.getColor(this, R.color.primary)
-        changeStatusBarColor(primaryColor)
-    }
-
-    private fun changeStatusBarColor(color: Int) {
-        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-        window.statusBarColor = color
-
-        val isLightBackground = ColorUtils.calculateLuminance(color) > 0.5
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars =
-            isLightBackground
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.main_menu, menu)
-
-        val menuItem = menu.findItem(R.id.action_toggle_theme)
-        val actionView = menuItem.actionView
-        val themeSwitch = actionView?.findViewById<SwitchCompat>(R.id.themeSwitch)
-
-        val isDarkModeActive =
-            (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-
-        themeSwitch?.setOnCheckedChangeListener(null)
-        themeSwitch?.isChecked = isDarkModeActive
-
-        themeSwitch?.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            } else {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-            }
+    private fun initHelpers() {
+        // Callback triggers UseCase which handles the permanent Canvas/Transformer watermarking
+        mediaPickerHelper = MediaPickerHelper(this) { uri, mediaType ->
+            viewModel.addMedia(uri, mediaType)
         }
-
-        return true
     }
 
-    private fun setupRecyclerView() {
+    private fun setupUI() {
+        setSupportActionBar(binding.toolbar)
+        changeStatusBarColor(ContextCompat.getColor(this, R.color.primary))
+        
         adapter = MediaAdapter(
             onItemClick = { openFullScreen(it) },
             onDeleteClick = { viewModel.deleteMedia(it) }
         )
-        binding.recyclerView.layoutManager = LinearLayoutManager(this)
-        binding.recyclerView.adapter = adapter
-    }
-
-    private fun setupListeners() {
-        binding.addAttachmentFab.setOnClickListener {
-            showAddAttachmentBottomSheet()
+        
+        binding.recyclerView.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = this@MainActivity.adapter
         }
 
         binding.swipeRefreshLayout.setOnRefreshListener {
             viewModel.refreshMedia()
+        }
+
+        binding.addAttachmentFab.setOnClickListener {
+            showAddAttachmentBottomSheet()
         }
     }
 
     private fun observeViewModel() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // UI State Observer
                 launch {
                     viewModel.uiState.collectLatest { state ->
-                        when (state) {
-                            is GalleryUiState.Loading -> {
-                                binding.swipeRefreshLayout.isRefreshing = true
-                                binding.progressBar.visibility =
-                                    if (!binding.swipeRefreshLayout.isRefreshing) View.VISIBLE else View.GONE
-                                binding.addAttachmentFab.isEnabled = false
-                            }
-
-                            is GalleryUiState.Success -> {
-                                binding.swipeRefreshLayout.isRefreshing = false
-                                binding.progressBar.visibility = View.GONE
-                                binding.addAttachmentFab.isEnabled = true
-                                adapter.submitList(state.mediaList)
-                                binding.emptyStateText.visibility =
-                                    if (state.mediaList.isEmpty()) View.VISIBLE else View.GONE
-                            }
-
-                            is GalleryUiState.Error -> {
-                                binding.swipeRefreshLayout.isRefreshing = false
-                                binding.progressBar.visibility = View.GONE
-                                binding.addAttachmentFab.isEnabled = true
-                                Toast.makeText(this@MainActivity, state.message, Toast.LENGTH_LONG)
-                                    .show()
-                            }
-                        }
+                        handleUiState(state)
                     }
                 }
+                // Error Event Observer
                 launch {
-                    viewModel.error.collectLatest { errorMessage ->
-                        Toast.makeText(this@MainActivity, errorMessage, Toast.LENGTH_LONG).show()
+                    viewModel.error.collectLatest { msg ->
+                        Toast.makeText(this@MainActivity, msg, Toast.LENGTH_LONG).show()
                     }
                 }
+                // Success Event Observer
                 launch {
-                    viewModel.successMessage.collectLatest { message ->
-                        Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+                    viewModel.successMessage.collectLatest { msg ->
+                        Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                     }
                 }
             }
         }
     }
 
+    private fun handleUiState(state: GalleryUiState) {
+        binding.swipeRefreshLayout.isRefreshing = state is GalleryUiState.Loading
+        binding.progressBar.visibility = if (state is GalleryUiState.Loading) View.VISIBLE else View.GONE
+        binding.addAttachmentFab.isEnabled = state !is GalleryUiState.Loading
+
+        when (state) {
+            is GalleryUiState.Success -> {
+                adapter.submitList(state.mediaList)
+                binding.emptyStateText.visibility = if (state.mediaList.isEmpty()) View.VISIBLE else View.GONE
+            }
+            is GalleryUiState.Error -> {
+                Toast.makeText(this, state.message, Toast.LENGTH_LONG).show()
+            }
+            else -> {}
+        }
+    }
+
     private fun showAddAttachmentBottomSheet() {
         BottomSheetUtils.showAddAttachmentBottomSheet(
             context = this,
-            onCapturePhoto = {
-                val tempUri = createTempUri(".jpg")
-                mediaPickerHelper.launchCameraForImage(tempUri)
-            },
-            onRecordVideo = {
-                val tempUri = createTempUri(".mp4")
-                mediaPickerHelper.launchCameraForVideo(tempUri)
-            },
+            onCapturePhoto = { mediaPickerHelper.launchCameraForImage(createTempUri(".jpg")) },
+            onRecordVideo = { mediaPickerHelper.launchCameraForVideo(createTempUri(".mp4")) },
             onSelectPhoto = { mediaPickerHelper.launchGalleryForImage() },
             onSelectVideo = { mediaPickerHelper.launchGalleryForVideo() }
         )
     }
 
     private fun createTempUri(extension: String): Uri {
-        val file =
-            File(getExternalFilesDir(null), "temp_media_${System.currentTimeMillis()}$extension")
-        return FileProvider.getUriForFile(
-            this,
-            "${applicationContext.packageName}${Constants.FILE_PROVIDER_AUTHORITY}",
-            file
-        )
+        val file = File(getExternalFilesDir(null), "temp_media_${System.currentTimeMillis()}$extension")
+        return FileProvider.getUriForFile(this, "${applicationContext.packageName}${Constants.FILE_PROVIDER_AUTHORITY}", file)
     }
 
     private fun openFullScreen(mediaItem: MediaItem) {
@@ -199,17 +161,32 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkPermissions() {
-        val requestPermissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
-            if (!permissions.all { it.value }) {
-                Toast.makeText(this, "Permissions required for camera and storage", Toast.LENGTH_SHORT)
-                    .show()
-            }
-        }
-
         if (!PermissionUtils.hasPermissions(this)) {
             requestPermissionLauncher.launch(PermissionUtils.getRequiredPermissions())
         }
+    }
+
+    private fun changeStatusBarColor(color: Int) {
+        window.apply {
+            addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            statusBarColor = color
+        }
+        val isLightBackground = ColorUtils.calculateLuminance(color) > 0.5
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = isLightBackground
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        val themeSwitch = menu.findItem(R.id.action_toggle_theme).actionView?.findViewById<SwitchCompat>(R.id.themeSwitch)
+        
+        val isDarkMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        themeSwitch?.isChecked = isDarkMode
+        
+        themeSwitch?.setOnCheckedChangeListener { _, isChecked ->
+            AppCompatDelegate.setDefaultNightMode(
+                if (isChecked) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
+            )
+        }
+        return true
     }
 }
